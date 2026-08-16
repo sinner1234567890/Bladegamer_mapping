@@ -34,8 +34,8 @@ namespace BladegamerMapping
         private string cliPath;
         private string codePath;
 
-        private const string GITHUB_REPO = "YOUR_USERNAME/YOUR_REPO"; // e.g. "bladegamer123/BladegamerSoftware"
-        private const string CURRENT_VERSION = "V14";
+        private const string GITHUB_REPO = "sinner1234567890/Bladegamer_mapping"; // e.g. "bladegamer123/BladegamerSoftware"
+        private const string CURRENT_VERSION = "V15";
         
         public MainForm()
         {
@@ -788,8 +788,6 @@ namespace BladegamerMapping
         }
         private async Task CheckForUpdatesAsync()
         {
-            if (GITHUB_REPO == "YOUR_USERNAME/YOUR_REPO") return; // Placeholder not updated yet
-
             try
             {
                 using (WebClient wc = new WebClient())

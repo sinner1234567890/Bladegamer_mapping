@@ -1,0 +1,8 @@
+*.exe
+layout.txt
+arduino-cli.exe
+arduino-cli.zip
+obj/
+bin/
+.vs/
+*.user

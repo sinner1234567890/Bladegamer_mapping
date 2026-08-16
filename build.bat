@@ -6,7 +6,7 @@ if not exist "%CSC%" (
 )
 
 echo Compiling BladegamerGUI...
-"%CSC%" /target:winexe /win32icon:icon.ico /out:BladegamerGUI_V15.exe /reference:System.dll,System.Windows.Forms.dll,System.Drawing.dll,System.IO.Compression.dll,System.IO.Compression.FileSystem.dll,System.Management.dll BladegamerGUI.cs
+"%CSC%" /target:winexe /win32icon:icon.ico /out:BladegamerGUI_V16.exe /reference:System.dll,System.Windows.Forms.dll,System.Drawing.dll,System.IO.Compression.dll,System.IO.Compression.FileSystem.dll,System.Management.dll BladegamerGUI.cs
 
 if %ERRORLEVEL% equ 0 (
     echo Build successful: BladegamerGUI.exe

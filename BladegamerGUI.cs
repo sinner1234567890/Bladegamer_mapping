@@ -35,7 +35,7 @@ namespace BladegamerMapping
         private string codePath;
 
         private const string GITHUB_REPO = "sinner1234567890/Bladegamer_mapping"; // e.g. "bladegamer123/BladegamerSoftware"
-        private const string CURRENT_VERSION = "V15";
+        private const string CURRENT_VERSION = "V16";
         
         public MainForm()
         {
@@ -73,11 +73,12 @@ namespace BladegamerMapping
             picController.Size = new Size(400, 400);
             picController.SizeMode = PictureBoxSizeMode.Zoom;
             
-            string imgPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "con.png");
-            if (File.Exists(imgPath))
+            picController.SizeMode = PictureBoxSizeMode.Zoom;
+            try
             {
-                picController.Image = Image.FromFile(imgPath);
+                picController.Image = Image.FromFile(@"assets\controller.png");
             }
+            catch { }
             this.Controls.Add(picController);
 
             // Mappings Panel

@@ -34,25 +34,38 @@ namespace BladegamerMapping
         private string cliPath;
         private string codePath;
 
+        private const string GITHUB_REPO = "YOUR_USERNAME/YOUR_REPO"; // e.g. "bladegamer123/BladegamerSoftware"
+        private const string CURRENT_VERSION = "V14";
+        
         public MainForm()
         {
             cliPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arduino-cli.exe");
             codePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "flash_code.cpp");
             
             InitializeComponent();
+            
+            // Check for updates in the background
+            var updateTask = CheckForUpdatesAsync();
         }
 
         private TextBox txtTestArea;
 
         private void InitializeComponent()
         {
-            this.Text = "Bladegamer Controller Mapping V3";
+            this.Text = "Bladegamer Controller Mapping " + CURRENT_VERSION;
             this.Size = new Size(820, 700);
             this.BackColor = Color.FromArgb(240, 240, 240); // Light Theme
             this.ForeColor = Color.Black;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.FormClosing += new FormClosingEventHandler(MainForm_FormClosing);
+            
+            // Set the custom Icon
+            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+            if (File.Exists(iconPath))
+            {
+                try { this.Icon = new Icon(iconPath); } catch { }
+            }
 
             // Image
             picController = new PictureBox();
@@ -772,6 +785,73 @@ namespace BladegamerMapping
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
+        }
+        private async Task CheckForUpdatesAsync()
+        {
+            if (GITHUB_REPO == "YOUR_USERNAME/YOUR_REPO") return; // Placeholder not updated yet
+
+            try
+            {
+                using (WebClient wc = new WebClient())
+                {
+                    wc.Headers.Add("User-Agent", "BladegamerGUI-Updater");
+                    string url = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
+                    string json = await wc.DownloadStringTaskAsync(url);
+
+                    var matchTag = Regex.Match(json, @"""tag_name""\s*:\s*""([^""]+)""");
+                    if (matchTag.Success)
+                    {
+                        string latestVersion = matchTag.Groups[1].Value;
+                        if (latestVersion != CURRENT_VERSION)
+                        {
+                            var matchAsset = Regex.Match(json, @"""browser_download_url""\s*:\s*""([^""]+\.exe)""");
+                            if (matchAsset.Success)
+                            {
+                                string downloadUrl = matchAsset.Groups[1].Value;
+                                
+                                this.Invoke((Action)(() =>
+                                {
+                                    DialogResult res = MessageBox.Show(
+                                        "A new update (" + latestVersion + ") is available on GitHub!\nWould you like to download it now?",
+                                        "Update Available", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                                        
+                                    if (res == DialogResult.Yes)
+                                    {
+                                        DownloadUpdate(downloadUrl, latestVersion);
+                                    }
+                                }));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Update check failed: " + ex.Message);
+            }
+        }
+
+        private async void DownloadUpdate(string url, string version)
+        {
+            string newFileName = "BladegamerGUI_" + version + ".exe";
+            string destPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, newFileName);
+            
+            try
+            {
+                Log("Downloading update " + version + "...");
+                using (WebClient wc = new WebClient())
+                {
+                    await wc.DownloadFileTaskAsync(new Uri(url), destPath);
+                }
+                
+                MessageBox.Show("Update downloaded successfully as: " + newFileName + "\n\nThe application will now close so you can run the new version.", "Update Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Application.Exit();
+            }
+            catch (Exception ex)
+            {
+                Log("Download failed: " + ex.Message);
+                MessageBox.Show("Download failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

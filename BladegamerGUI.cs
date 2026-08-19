@@ -32,15 +32,14 @@ namespace BladegamerMapping
 
         private const string ARDUINO_CLI_URL = "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip";
         private string cliPath;
-        private string codePath;
 
         private const string GITHUB_REPO = "sinner1234567890/Bladegamer_mapping"; // e.g. "bladegamer123/BladegamerSoftware"
-        private const string CURRENT_VERSION = "V16";
+        private const string CURRENT_VERSION = "V19";
         
         public MainForm()
         {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             cliPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arduino-cli.exe");
-            codePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "flash_code.cpp");
             
             InitializeComponent();
             
@@ -703,11 +702,21 @@ namespace BladegamerMapping
                 Log("Installing Keyboard library...");
                 await RunCliCommand("lib install Keyboard");
                 
+                string tempDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FirmwareBuild");
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+                Directory.CreateDirectory(tempDir);
+                
+                string inoSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Bladegamer_mapping.ino");
+                string inoDest = Path.Combine(tempDir, "FirmwareBuild.ino");
+                File.Copy(inoSource, inoDest, true);
+
                 Log("Compiling firmware (Original Flash)... This takes a moment.");
-                await RunCliCommand("compile --fqbn arduino:avr:leonardo .");
+                await RunCliCommand("compile --fqbn arduino:avr:leonardo FirmwareBuild");
 
                 Log(string.Format("Uploading firmware to {0}...", port));
-                await RunCliCommand(string.Format("upload -p {0} --fqbn arduino:avr:leonardo .", port));
+                await RunCliCommand(string.Format("upload -p {0} --fqbn arduino:avr:leonardo FirmwareBuild", port));
+                
+                try { Directory.Delete(tempDir, true); } catch { }
 
                 Log("Original Flashing complete! Now click CONNECT to use Live Mapping.");
                 MessageBox.Show("Original Firmware installed successfully! You can now CONNECT and use Instant Saving.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);

@@ -46,6 +46,8 @@ const byte EEPROM_MAGIC_VAL = 0x43; // Changed to 0x43 since structure changed
 // ============================================================
 bool prevBtn1 = false, prevBtn2 = false, prevBtn3 = false, prevBtn4 = false, prevBtn5 = false, prevBtn6 = false;
 bool joyLeft = false, joyRight = false, joyUp = false, joyDown = false;
+unsigned long lastBtnTime[7] = {0,0,0,0,0,0,0}; // Debounce timers for buttons 1-6
+const unsigned long DEBOUNCE_TIME = 5;
 
 // ============================================================
 // MULTI-CLICK
@@ -87,6 +89,7 @@ void loadEEPROM() {
 
 void setup() {
   Serial.begin(115200);
+  Serial.setTimeout(5); // Prevent blocking on partial serial commands
   Keyboard.begin();
   Keyboard.releaseAll();
 
@@ -154,34 +157,40 @@ void processSerialCommands() {
   }
 }
 
-void handleButton(bool currentState, bool &prevState, char key, const char* label) {
+void handleButton(bool currentState, bool &prevState, char key, const char* label, int btnIdx) {
   if (currentState != prevState) {
-    if (currentState) {
-      Keyboard.press(key);
-      Serial.print("BTN:"); Serial.println(label);
-    } else {
-      Keyboard.release(key);
+    if (millis() - lastBtnTime[btnIdx] > DEBOUNCE_TIME) {
+      if (currentState) {
+        Keyboard.press(key);
+        Serial.print("BTN:"); Serial.println(label);
+      } else {
+        Keyboard.release(key);
+      }
+      prevState = currentState;
+      lastBtnTime[btnIdx] = millis();
     }
-    prevState = currentState;
   }
 }
 
-void handleMultiClick(bool currentState, bool &prevState, const char* label) {
+void handleMultiClick(bool currentState, bool &prevState, const char* label, int btnIdx) {
   if (currentState != prevState) {
-    if (currentState) {
-      pressCount++;
-      lastPressTime = millis();
-      Serial.print("BTN:"); Serial.println(label);
+    if (millis() - lastBtnTime[btnIdx] > DEBOUNCE_TIME) {
+      if (currentState) {
+        pressCount++;
+        lastPressTime = millis();
+        Serial.print("BTN:"); Serial.println(label);
+      }
+      prevState = currentState;
+      lastBtnTime[btnIdx] = millis();
     }
-    prevState = currentState;
   }
 }
 
 void handleAnyButton(bool currentState, bool &prevState, char key, const char* label, int buttonIndex) {
   if (MULTI_CLICK_BTN == buttonIndex) {
-    handleMultiClick(currentState, prevState, label);
+    handleMultiClick(currentState, prevState, label, buttonIndex);
   } else {
-    handleButton(currentState, prevState, key, label);
+    handleButton(currentState, prevState, key, label, buttonIndex);
   }
 }
 
@@ -198,12 +207,14 @@ void loop() {
   bool b5 = (digitalRead(button5) == LOW);
   bool b6 = (digitalRead(button6) == LOW);
 
+  int releaseThreshold = threshold - 20;
+
   // Joystick Down (x < center)
   if (xReading < joystickCenterX - threshold && !joyDown) {
     Keyboard.press(KEY_DOWN);
     joyDown = true;
     Serial.println("BTN:DOWN");
-  } else if (xReading >= joystickCenterX - threshold && joyDown) {
+  } else if (xReading >= joystickCenterX - releaseThreshold && joyDown) {
     Keyboard.release(KEY_DOWN);
     joyDown = false;
   }
@@ -212,7 +223,7 @@ void loop() {
     Keyboard.press(KEY_UP);
     joyUp = true;
     Serial.println("BTN:UP");
-  } else if (xReading <= joystickCenterX + threshold && joyUp) {
+  } else if (xReading <= joystickCenterX + releaseThreshold && joyUp) {
     Keyboard.release(KEY_UP);
     joyUp = false;
   }
@@ -221,7 +232,7 @@ void loop() {
     Keyboard.press(KEY_LEFT);
     joyLeft = true;
     Serial.println("BTN:LEFT");
-  } else if (yReading >= joystickCenterY - threshold && joyLeft) {
+  } else if (yReading >= joystickCenterY - releaseThreshold && joyLeft) {
     Keyboard.release(KEY_LEFT);
     joyLeft = false;
   }
@@ -230,7 +241,7 @@ void loop() {
     Keyboard.press(KEY_RIGHT);
     joyRight = true;
     Serial.println("BTN:RIGHT");
-  } else if (yReading <= joystickCenterY + threshold && joyRight) {
+  } else if (yReading <= joystickCenterY + releaseThreshold && joyRight) {
     Keyboard.release(KEY_RIGHT);
     joyRight = false;
   }
@@ -248,6 +259,4 @@ void loop() {
     Keyboard.print(finalCount);
     pressCount = 0;
   }
-
-  delay(1);
 }
